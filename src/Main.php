@@ -22,6 +22,66 @@ class Main
         $this->buttonShortcode();
         $this->chatShortcode();
         $this->onlineShortcode();
+        $this->memberShortCode();
+        $this->memberMessageShortcode();
+        $this->subsbyEventCheckShortCode();
+    }
+
+    private function getAudience( $event_id )
+    {
+      return $this->database->wpdb->get_results(
+          "SELECT `subscribers`
+           FROM `" . $this->database->wpdb->prefix . "subsbu_audience`
+           WHERE `post_id` = " . $event_id,
+           ARRAY_A
+      )[0]['subscribers'];
+    }
+
+
+    private function subsbyEventCheckShortCode()
+    {
+        add_shortcode( 'nmo-subsbu-event-check', function( $atts )
+        {
+            $atts = shortcode_atts([
+                'url' => '',
+                'event_id' => ''
+            ], $atts);
+
+            if( $atts[ 'url' ] === '' || $atts[ 'event_id' ] === '' )
+                return 'Данные не заполненые шорткода nmo-subsbu-event-check не заполнены!';
+
+            $html = "<script>document.location.href = '{$atts[ 'url' ]}'</script>";
+            $audience = $this->getAudience( $atts[ 'event_id' ] );
+
+             if( in_array( get_current_user_id(), explode(';', $audience) ) && is_user_logged_in() )
+                 return '';
+
+            wp_redirect($atts[ 'url' ]);
+            exit;
+            return;
+        });
+    }
+
+    private function memberShortCode()
+    {
+        add_shortcode( 'unmember', function( $content )
+        {
+            if ( !is_user_logged_in() && !is_feed() )
+              return do_shortcode($content);
+
+            return '';
+        });
+    }
+
+    private function memberMessageShortcode()
+    {
+        add_shortcode( 'member-message', function( $content )
+        {
+            if( is_user_logged_in() && !is_null( $content ) && !is_feed() )
+                return do_shortcode($content);
+
+            return do_shortcode('[us_message color="red" icon="fas|user-secret"]</p><p>Для просмотра <b><u><span style="cursor: pointer;" class="lrm-login"><a href="/login-page/">авторизуйтесь</a></span></u> или <u><span style="cursor: pointer;" class="lrm-register"><a href="/registration/">зарегистрируйтесь</a></span></u></b> на&nbsp;сайте!</p>[/us_message]');
+        });
     }
 
     private function trackVisit()

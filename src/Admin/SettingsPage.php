@@ -54,14 +54,14 @@ class SettingsPage
               array($this, 'nmobtn_settings_config_callback')
           );
 
-          add_submenu_page(
-              'settings_nmobtn',
-              'Симпозиумы',
-              'Симпозиумы',
-              'administrator',
-              'settings_nmobtn_4',
-              array($this, 'nmobtn_settings_symposiums_callback')
-          );
+          // add_submenu_page(
+          //     'settings_nmobtn',
+          //     'Симпозиумы',
+          //     'Симпозиумы',
+          //     'administrator',
+          //     'settings_nmobtn_4',
+          //     array($this, 'nmobtn_settings_symposiums_callback')
+          // );
       });
 
       $this->fileClicks();
@@ -637,24 +637,6 @@ class SettingsPage
       foreach ( $meta_key_saved as $value)
           array_push($head_table, $value);
 
-      if( $event_id === 'all' )
-      {
-          $events = $this->database->tables['events']->GetAll();
-          $events_users = [];
-
-          foreach ( $events as $event )
-          {
-              array_push( $head_table, $event['name'] );
-              $events_users_id = $this->database->tables['track']->GetEventDate($event['event_id'], $date_start, $date_end);
-              $event_users_temp = [];
-
-              foreach ($events_users_id as $event_user_id)
-                 array_push( $event_users_temp, $event_user_id['user_id'] );
-
-              $events_users += [ $event['event_id'] => $event_users_temp ];
-          }
-      }
-
       $file = implode(";", $head_table) . "\r\n";
 
       if( $event_id === 'all' )
@@ -729,19 +711,6 @@ class SettingsPage
               $meta = get_user_meta(  $user->ID, $key, true );
               $meta = str_replace("\r\n", " ", $meta);
               array_push($content, $meta);
-          }
-
-          if( $event_id === 'all' )
-          {
-              foreach ($events as $event)
-              {
-                   if( in_array( $user->ID, $events_users[ $event[ 'event_id' ] ] ) )
-                       array_push($content, 'Просмотр');
-                   else
-                       array_push($content, 'Не заходил');
-
-                  // array_push($content,  implode("|", $events_users[ $event[ 'event_id' ] ] ) );
-              }
           }
 
           $count++;

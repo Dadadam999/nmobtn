@@ -18,7 +18,7 @@ use nmobtn\Tables\ChatTable;
 
 class Database
 {
-   private $wpdb;
+   public $wpdb;
    public $tables;
 
    public function __construct()
