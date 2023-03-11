@@ -392,6 +392,12 @@ class SettingsPage
      $html .= '<br>';
      $html .= '<input type="datetime-local" id="nmobtn-end-date" name="nmobtn-end-date" value="'. date('Y-m-d H:i:s') .'">';
      $html .= '<br><br>';
+
+     $html .= '<label style="margin-top:20px; min-width: 50%;" for="nmobtn-url-filter" class="form-label">URL:</label>';
+     $html .= '<br>';
+     $html .= '<input type="text" id="nmobtn-url-filter" name="nmobtn-url-filter" value="">';
+     $html .= '<br><br>';
+
      $html .= '<button type="submit" style="margin-top:20px;" class="button button-primary">Выгрузить CSV</button>';
      $html .= '</form>';
      $html .= '</div>';
@@ -534,7 +540,7 @@ class SettingsPage
       return $file;
   }
 
-  private function getFileVisits($event_id, $date_start, $date_end)
+  private function getFileVisits($event_id, $date_start, $date_end, $url)
   {
       $head_table = [
            "User ID",
@@ -549,7 +555,12 @@ class SettingsPage
           array_push($head_table, $value);
 
       $file = implode(";", $head_table) . "\r\n";
-      $responce = $this->database->tables['visits']->GetToDate( $date_start, $date_end );
+
+      if( empty( $url ) )
+          $responce = $this->database->tables['visits']->GetToDate( $date_start, $date_end );
+      else
+          $responce = $this->database->tables['visits']->GetToUrl( $url );
+
       $count=0;
 
       foreach ( $responce as $row )
@@ -644,6 +655,12 @@ class SettingsPage
           $tracks = $this->database->tables['track']->GetAllDate($date_start, $date_end);
           $presence = $this->database->tables['presence']->GetGroupAll($date_start, $date_end);
           $users = get_users( [ 'role' => 'subscriber' ] );
+
+           // $ids_users = [1];
+           //
+           // $users = get_users( [
+           //     'include' => $ids_users
+           // ] );
       }
       else
       {
@@ -811,7 +828,7 @@ class SettingsPage
               $file = $this->getFileGroup('Specialty', 0, 'Специальность');
 
           if($template_id == 5)
-              $file = $this->getFileVisits($event_id, $date_start, $date_end);
+              $file = $this->getFileVisits($event_id, $date_start, $date_end, $_POST['nmobtn-url-filter']);
 
           if($template_id == 6)
               $file = $this->getFileChat($event_id, $date_start, $date_end);
