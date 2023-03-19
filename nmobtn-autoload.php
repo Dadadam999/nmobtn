@@ -8,7 +8,7 @@ spl_autoload_register(function($classname)
 {
     if (strpos($classname, 'nmobtn') !== false)
     {
-        $path = __DIR__.'/src/';
+        $path = __DIR__.'/Source/';
         $file = explode('\\', $classname);
 
         if (count($file) > 2)

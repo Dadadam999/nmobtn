@@ -42,7 +42,7 @@ class TrackTable implements ITable
     return $this->wpdb->get_results(
         "SELECT *
          FROM `" . $this->wpdb->prefix . "nmobtn_user_track`
-         WHERE `event_id` = " . $event_id . " AND `user_id` = " . $user_id . " ORDER BY event_id DESC",
+         WHERE `event_id` = " . $event_id . " AND `user_id` = " . $user_id . " ORDER BY id DESC",
          ARRAY_A
     )[0];
   }
@@ -125,20 +125,24 @@ class TrackTable implements ITable
 
   public function Update($event_id, $user_id)
   {
-    date_default_timezone_set('Europe/Moscow');
-    $date_now = date("Y-m-d H:i:s");
+      date_default_timezone_set('Europe/Moscow');
+      $date_now = date("Y-m-d H:i:s");
+      $last_id = $this->wpdb->get_results("SELECT MAX(`id`) as idmax FROM `" . $this->wpdb->prefix . "nmobtn_user_track` WHERE user_id = {$user_id} AND event_id = {$event_id}", ARRAY_A)[0]['idmax'];
 
-    $this->wpdb->get_results(
-      "UPDATE `" . $this->wpdb->prefix . "nmobtn_user_track`
-       SET `last_date`= '" . $date_now . "'
-       WHERE `event_id` = " . $event_id . " AND `user_id` = " . $user_id
-    );
+      if( !empty($last_id) )
+      {
+          $this->wpdb->get_results(
+            "UPDATE `{$this->wpdb->prefix}nmobtn_user_track`
+             SET `last_date`= '{$date_now}'
+             WHERE `event_id` = {$event_id} AND `id` = {$last_id} AND `user_id` = {$user_id}"
+          );
+      }
   }
 
   public function Delete($event_id, $user_id)
   {
-    $this->wpdb->get_results(
-      "DELETE FROM `" . $this->wpdb->prefix . "nmobtn_user_track` WHERE user_id = " . $user_id . " AND `event_id` = " . $event_id
-    );
+      $this->wpdb->get_results(
+        "DELETE FROM `" . $this->wpdb->prefix . "nmobtn_user_track` WHERE user_id = " . $user_id . " AND `event_id` = " . $event_id
+      );
   }
 }

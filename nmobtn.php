@@ -12,19 +12,19 @@ require_once __DIR__.'/nmobtn-autoload.php';
 use nmobtn\DataBase;
 use nmobtn\Main;
 
+DataBase::init();
+
 register_activation_hook(__FILE__, 'nmoButtonInstall');
 register_deactivation_hook(__FILE__, 'nmoButtonUninstall');
 
 function nmoButtonInstall()
 {
-  $tables = new DataBase();
-  $tables->Install();
+    DataBase::Install();
 }
 
 function nmoButtonUninstall()
 {
-  $tables = new DataBase();
-  $tables->Uninstall();
+    DataBase::Uninstall();
 }
 
 new Main();

@@ -15,19 +15,19 @@ use nmobtn\Tables\TrackTable;
 use nmobtn\Tables\SettingsTable;
 use nmobtn\Tables\VisitsTable;
 use nmobtn\Tables\ChatTable;
+use nmobtn\Tables\PresentationsTable;
 
 class Database
 {
-   public $wpdb;
-   public $tables;
+   public static $wpdb;
+   public static $tables;
 
-   public function __construct()
+   public static function init()
    {
        global $wpdb;
-       $this->wpdb = $wpdb;
+       self::$wpdb = $wpdb;
 
-       $this->tables =
-       [
+       self::$tables = [
          'presence' => new PresenceTable,
          'previewCheck' => new PreviewCheckTable,
          'events' => new EventsTable,
@@ -35,19 +35,20 @@ class Database
          'track' => new TrackTable,
          'settings' => new SettingsTable,
          'visits' => new VisitsTable,
-         'chat' => new ChatTable
+         'chat' => new ChatTable,
+         'presentations' => new PresentationsTable
        ];
    }
 
-   public function Install()
+   public static function Install()
    {
-     foreach ($this->tables as $table)
+     foreach( self::$tables as $table )
        $table->Create();
    }
 
-   public function Uninstall()
+   public static function Uninstall()
    {
-     foreach ($this->tables as $table)
+     foreach( self::$tables as $table )
        $table->Drop();
    }
 }

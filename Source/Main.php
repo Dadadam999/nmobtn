@@ -5,17 +5,14 @@
  */
 namespace nmobtn;
 use nmobtn\DataBase;
-use nmobtn\Admin\SettingsPage;
+use nmobtn\Admin\AdminMananger;
 use WP_REST_Request;
 
 class Main
 {
-    private $database;
-
     public function __construct()
     {
-        new SettingsPage;
-        $this->database = new DataBase;
+        new AdminMananger;
         $this->trackVisit();
         $this->apiInit();
         $this->scriptAdd();
@@ -29,9 +26,9 @@ class Main
 
     private function getAudience( $event_id )
     {
-      return $this->database->wpdb->get_results(
+      return DataBase::$wpdb->get_results(
           "SELECT `subscribers`
-           FROM `" . $this->database->wpdb->prefix . "subsbu_audience`
+           FROM `" . DataBase::$wpdb->prefix . "subsbu_audience`
            WHERE `post_id` = " . $event_id,
            ARRAY_A
       )[0]['subscribers'];
@@ -64,7 +61,7 @@ class Main
 
     private function memberShortCode()
     {
-        add_shortcode( 'unmember', function( $content )
+        add_shortcode( 'unmember', function( $atts, $content )
         {
             if ( !is_user_logged_in() && !is_feed() )
               return do_shortcode($content);
@@ -75,10 +72,10 @@ class Main
 
     private function memberMessageShortcode()
     {
-        add_shortcode( 'member-message', function( $content )
+        add_shortcode( 'member-message', function( $atts, $content )
         {
-            if( is_user_logged_in() && !is_null( $content ) && !is_feed() )
-                return do_shortcode($content);
+            if( is_user_logged_in() && !is_null( $content ) )
+                return do_shortcode( $content );
 
             return do_shortcode('[us_message color="red" icon="fas|user-secret"]</p><p>Для просмотра <b><u><span style="cursor: pointer;" class="lrm-login"><a href="/login-page/">авторизуйтесь</a></span></u> или <u><span style="cursor: pointer;" class="lrm-register"><a href="/registration/">зарегистрируйтесь</a></span></u></b> на&nbsp;сайте!</p>[/us_message]');
         });
@@ -94,20 +91,20 @@ class Main
             if ( !empty($user_id) && (int)$response_code < 400 )
             {
                 $url = ( empty($_SERVER['HTTPS']) ? 'http' : 'https' ) . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-                $this->database->tables['visits']->Add( $user_id, $url );
+                DataBase::$tables['visits']->Add( $user_id, $url );
             }
         });
     }
 
     private function scriptAdd()
     {
-        wp_enqueue_style( 'shortcodes', plugins_url('nmobtn/assets/css/shortcodes.css') );
+        wp_enqueue_style( 'shortcodes', plugins_url('nmobtn/Assets/Css/Shortcodes.css') );
 
         add_action('wp_enqueue_scripts', function()
         {
             wp_enqueue_script(
                 'nmobtn-client',
-                plugins_url('nmobtn/assets/js/nmobtn-client.js'),
+                plugins_url('nmobtn/Assets/Js/Client.js'),
                 [],
                 '0.1.5'
             );
@@ -131,7 +128,7 @@ class Main
             $event_id = $atts['event_id'];
             $html_md5 = md5('nmobtn-chat-' . $event_id . '-' . $user_id);
             $html_send = 'onclick="nmobtnClient.chatsend(\'' . $event_id . '\', \'' . $user_id . '\', \'' . $user_name . '\', \'' . $html_md5 . '\')"';
-            $messages = $this->database->tables['chat']->GetToEvent($event_id);
+            $messages = DataBase::$tables['chat']->GetToEvent($event_id);
 
             $html = '<script>
                         setInterval( () => {
@@ -174,7 +171,7 @@ class Main
 
             if ($user_info_per->user_level >= 7)
             {
-              $online = $this->database->tables['eventUsers']->GetCount( $atts['event_id'] );
+              $online = DataBase::$tables['eventUsers']->GetCount( $atts['event_id'] );
               return '<div id="online-event" class="online-event">Всего сейчас онлайн: '. $online .'</div>';
             }
 
@@ -193,19 +190,19 @@ class Main
                 'css-style' => ''
             ], $atts);
 
-            $post = $this->database->tables['events']->Get($atts['event_id']);
+            $post = DataBase::$tables['events']->Get($atts['event_id']);
 
             $user_id = get_current_user_id();
 
             if(empty($post))
-                $this->database->tables['events']->Add($atts['event_id'], $atts['event_name']);
+                DataBase::$tables['events']->Add($atts['event_id'], $atts['event_name']);
 
             if (empty($user_id))
                 return;
 
             $post_id = $post['event_id'];
-            $this->database->tables['eventUsers']->Delete($user_id); //?
-            $this->database->tables['eventUsers']->Add($post_id, $user_id); //?
+            DataBase::$tables['eventUsers']->Delete($user_id); //?
+            DataBase::$tables['eventUsers']->Add($post_id, $user_id); //?
             $html_id = htmlspecialchars('nmobtn-presence-button');
             $html_style = htmlspecialchars($atts['css-style']);
             $html_class = htmlspecialchars($atts['css-class']);
@@ -215,7 +212,7 @@ class Main
             $html .= '<script>
                         setInterval( () => {
                           nmobtnClient.checknmo(\'' . $post_id . '\', \'' . $user_id . '\');
-                        },  60 * 1000);
+                        },  15 * 1000);
                       </script>';
 
             $style_btn = 'style="padding: 5px; margin: 5px; background: #ff2b2b; color: white;"';
@@ -262,10 +259,10 @@ class Main
                                 'message' => 'Too few arguments for this argument.'
                             ];
 
-                        $users = $this->database->tables['eventUsers']->Get($post_id);
+                        $users = DataBase::$tables['eventUsers']->Get($post_id);
 
                         foreach ($users as $user)
-                           $this->database->tables['previewCheck']->Add($post_id, $user['user_id']);
+                           DataBase::$tables['previewCheck']->Add($post_id, $user['user_id']);
 
                         return [
                             'code' => 0,
@@ -291,20 +288,32 @@ class Main
                                 'message' => 'Too few arguments for this argument.'
                             ];
 
-                        $status_click = $this->database->tables['previewCheck']->Get($post_id, $user_id);
-                        $current_track = $this->database->tables['track']->Get( $post_id, $user_id );
+                        $status_click = DataBase::$tables['previewCheck']->Get($post_id, $user_id);
+                        $current_track = DataBase::$tables['track']->Get( $post_id, $user_id );
 
                         if( empty( $current_track ) )
-                             $this->database->tables['track']->Add( $post_id, $user_id );
+                        {
+                             DataBase::$tables['track']->Add( $post_id, $user_id );
+                        }
                         else
-                             $this->database->tables['track']->Update( $post_id, $user_id );
+                        {
+                             date_default_timezone_set( 'Europe/Moscow' );
+                             $date_now = \DateTime::createFromFormat( 'Y-m-d H:i:s', date('Y-m-d H:i:s') );
+                             $date_current = \DateTime::createFromFormat( 'Y-m-d H:i:s',  $current_track['last_date'] );
+                             $diff = $date_now->diff( $date_current );
+                             $minutes = $diff->i;
+
+                             if ( $minutes > 1 )
+                                DataBase::$tables['track']->Add( $post_id, $user_id );
+                             else
+                                DataBase::$tables['track']->Update( $post_id, $user_id );
+                        }
 
                         return [
                             'code' => 0,
-                            'message' => 'Success.',
+                            'message' => 'Success.' . $minutes, //$date_now->format('Y-m-d H:i:s') . '|' . $date_current->format('Y-m-d H:i:s'),
                             'status' => $status_click[0]['click']
                         ];
-
                     }
                 ]
             );
@@ -325,8 +334,8 @@ class Main
                                 'message' => 'Too few arguments for this argument.'
                             ];
 
-                        $this->database->tables['previewCheck']->Delete($post_id, $user_id);
-                        $this->database->tables['presence']->Add($post_id, $user_id);
+                        DataBase::$tables['previewCheck']->Delete($post_id, $user_id);
+                        DataBase::$tables['presence']->Add($post_id, $user_id);
 
                         return [
                             'code' => 0,
@@ -358,7 +367,7 @@ class Main
                                 'messages' => []
                             ];
 
-                        $messages = $this->database->tables['chat']->GetLastWithoutUser($event_id, $user_id, $last_date);
+                        $messages = DataBase::$tables['chat']->GetLastWithoutUser($event_id, $user_id, $last_date);
 
                         return [
                             'code' => 0,
@@ -387,8 +396,8 @@ class Main
                                 'message' => 'Too few arguments for this argument.'
                             ];
 
-                        $this->database->tables['chat']->Add($event_id, $user_id, $user_name, $message);
-                        $last_messge = $this->database->tables['chat']->GetToUserLast($event_id, $user_id);
+                        DataBase::$tables['chat']->Add($event_id, $user_id, $user_name, $message);
+                        $last_messge = DataBase::$tables['chat']->GetToUserLast($event_id, $user_id);
 
                         return [
                             'code' => 0,

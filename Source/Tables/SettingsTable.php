@@ -36,13 +36,6 @@ class SettingsTable implements ITable
       ];
 
       $this->Add( 'template_usermeta', json_encode($default_template_usermeta, JSON_UNESCAPED_UNICODE ) );
-
-
-      // $default_template_symposiums = [
-      //     'Открытие' => [ 'hall' => '1', 'date_start' => '' ]'Телефон'
-      // ];
-      //
-      // $this->Add( 'template_symposiums', json_encode($default_template_symposiums, JSON_UNESCAPED_UNICODE ) );
   }
 
   public function Drop()
