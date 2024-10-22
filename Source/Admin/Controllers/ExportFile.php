@@ -51,7 +51,7 @@ class ExportFile
           $file = '';
 
           if($template_id == 1)
-              $file = FileGenerator::getNmo($event_id, $date_start, $date_end);
+              $file = FileGenerator::getNmoAll($event_id, $date_start, $date_end);
 
           if($template_id == 2)
               $file = FileGenerator::getUsers($event_id, $date_start, $date_end);
@@ -80,6 +80,9 @@ class ExportFile
 
           if($template_id == 8)
               $file = FileGenerator::getPresentations();
+
+          if($template_id == 9)
+              $file = FileGenerator::getNmo($event_id, $date_start, $date_end);
 
           if( empty( $file ) )
               $file = 'Шаблон выбран не верно';

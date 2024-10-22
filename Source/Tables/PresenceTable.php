@@ -74,6 +74,16 @@ class PresenceTable implements ITable
     );
   }
 
+  public function GetAll($date_start, $date_end)
+  {
+    return $this->wpdb->get_results(
+        "SELECT * FROM `" . $this->wpdb->prefix . "nmobtn_presence`
+         WHERE `presence_time` >= STR_TO_DATE('" . $date_start . "', '%Y-%m-%d %H:%i:%s') AND
+         `presence_time` <= STR_TO_DATE('" . $date_end . "', '%Y-%m-%d %H:%i:%s')",
+         ARRAY_A
+    );
+  }
+
   public function Add($event_id, $user_id)
   {
       date_default_timezone_set('Europe/Moscow');

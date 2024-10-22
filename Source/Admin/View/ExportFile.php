@@ -21,6 +21,7 @@
                 <option value="6">Чат</option>
                 <option value="7">Общая</option>
                 <option value="8">Симпозиумы</option>
+                <option value="9">НМО суммы</option>
             </select>
             <br><br>
             <label style="margin-top:20px; min-width: 50%;" for="nmobtn-file-select" class="form-label">Выберите мероприятие:</label>

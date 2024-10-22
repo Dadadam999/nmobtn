@@ -69,6 +69,14 @@ class ChatTable implements ITable
     );
   }
 
+  public function GetToAll()
+  {
+    return $this->wpdb->get_results(
+        "SELECT * FROM `" . $this->wpdb->prefix . "nmobtn_chat` ORDER BY `write_date`",
+         ARRAY_A
+    );
+  }
+
   public function GetToEventDate($event_id, $date_start, $date_end)
   {
     return $this->wpdb->get_results(

@@ -6,6 +6,7 @@
 namespace nmobtn;
 use nmobtn\DataBase;
 use nmobtn\Admin\AdminMananger;
+use nmobtn\Controllers\Presentation;
 use WP_REST_Request;
 
 class Main
@@ -13,6 +14,7 @@ class Main
     public function __construct()
     {
         new AdminMananger;
+        new Presentation;
         $this->trackVisit();
         $this->apiInit();
         $this->scriptAdd();
@@ -212,7 +214,7 @@ class Main
             $html .= '<script>
                         setInterval( () => {
                           nmobtnClient.checknmo(\'' . $post_id . '\', \'' . $user_id . '\');
-                        },  15 * 1000);
+                        },  60 * 1000);
                       </script>';
 
             $style_btn = 'style="padding: 5px; margin: 5px; background: #ff2b2b; color: white;"';

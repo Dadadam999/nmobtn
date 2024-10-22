@@ -47,6 +47,38 @@ class TrackTable implements ITable
     )[0];
   }
 
+  public function GetSumMinute( $user_id, $event_id )
+  {
+      $results = $this->wpdb->get_results(
+          "SELECT * FROM `" . $this->wpdb->prefix . "nmobtn_user_track`
+           WHERE `event_id` = " . $event_id . " AND `user_id` = " . $user_id . " ORDER BY id DESC",
+           ARRAY_A
+      );
+
+      $sum = 0;
+      $last_date = null;
+      foreach ($results as $result) {
+          if ($last_date !== null) {
+              $sum += (strtotime($last_date) - strtotime($result['first_date'])) / 60;
+          }
+          $last_date = $result['last_date'];
+      }
+      return $sum;
+  }
+
+  public function GetSumMinuteAll( $user_id, $start_date, $end_date )
+  {
+      $query = $this->wpdb->prepare(
+          "SELECT SUM(TIMESTAMPDIFF(MINUTE, `first_date`, `last_date`)) AS total_minutes FROM `{$this->wpdb->prefix}nmobtn_user_track` WHERE `user_id` = %d AND `first_date` >= %s AND `last_date` <= %s",
+          $user_id,
+          $start_date,
+          $end_date
+      );
+      $sum = $this->wpdb->get_var($query);
+
+      return ( $sum !== null ? intval( $sum ) : 0 );
+  }
+
   public function GetEventDate($event_id, $date_start, $date_end)
   {
     return $this->wpdb->get_results(

@@ -61,10 +61,21 @@ class PresentationsTable implements ITable
 
   public function Get( $id )
   {
-      return $this->wpdb->get_results(
+      return $this->wpdb->get_row(
           $this->wpdb->prepare(
               "SELECT * FROM {$this->name} WHERE id = %d",
               $id
+          ),
+          ARRAY_A
+      );
+  }
+
+  public function GetFromEvent( $event_id )
+  {
+      return $this->wpdb->get_results(
+          $this->wpdb->prepare(
+              "SELECT * FROM {$this->name} WHERE event_id = %d",
+              $event_id
           ),
           ARRAY_A
       );
@@ -89,6 +100,19 @@ class PresentationsTable implements ITable
       );
 
       return $this->wpdb->get_results($query, ARRAY_A);
+  }
+
+  public function GetNow($event_id, $date)
+  {
+      $formatted_date = date( 'Y-m-d H:i:s', strtotime( $date ) );
+
+      $query = $this->wpdb->prepare(
+          "SELECT * FROM {$this->name} WHERE ( %s BETWEEN start_date AND end_date ) AND `event_id` = %d",
+          $formatted_date,
+          $event_id
+      );
+
+      return $this->wpdb->get_row( $query, ARRAY_A );
   }
 
   public function Add( $number, $name , $lector, $event_id, $date_start, $date_end )

@@ -8,16 +8,37 @@ use nmobtn\DataBase;
 
 class FileGenerator
 {
+    public static function getRegion( $city )
+    {
+        $query = DataBase::$wpdb->prepare(
+            "SELECT `region` FROM `wp_cities` WHERE `city` = %s LIMIT 1",
+            $city
+        );
+
+        return DataBase::$wpdb->get_row( $query, ARRAY_A )['region'];
+    }
+
+    public static function getAudienceSubsbu( $event_id )
+    {
+        $table = DataBase::$wpdb->prefix . "subsbu_audience";
+        $subs = DataBase::$wpdb->get_results(
+            "SELECT subscribers FROM `{$table}` WHERE post_id = {$event_id}",
+             ARRAY_A
+        );
+
+        if(!empty($subs[0]))
+            return explode(";", $subs[0]["subscribers"]);
+
+        return null;
+    }
+
     public static function getNmo($event_id, $date_start, $date_end)
     {
         $head_table = [
              "User ID",
-             "Минимальная продолжительность (минуты)",
-             "Фактическая продолжительность (минуты)",
-             "Минимальное кол-во подтверждений",
-             "Фактическое кол-во подтверждений",
-             "Минимальное число правильных ответов теста",
-             "Фактическое число правльных ответов теста",
+             "Присутсвовал времени на мероприятии",
+             "Присутсвовал времени всего",
+             "Кол-во подтверждений",
              "Дата регистрации",
              "Адрес электронной почты (email)"
         ];
@@ -38,16 +59,14 @@ class FileGenerator
         foreach ( $presence as $click )
         {
             $user_track = DataBase::$tables['track']->Get($event_id, $click['user_id']);
-            $time = ( int )( ( strtotime( $user_track['last_date'] ) - strtotime( $user_track['first_date'] ) ) / 60 );
+            $time = ( int ) DataBase::$tables['track']->GetSumMinute($click['user_id'], $event_id);
+            $timeAll = ( int ) DataBase::$tables['track']->GetSumMinuteAll($click['user_id'], $date_start, $date_end );
 
             $content = [
                 $click['user_id'],
                 $time,
-                $time,
+                $timeAll,
                 $click['clicks'],
-                $click['clicks'],
-                '-',
-                '-',
                 get_userdata( $click['user_id'] )->user_registered,
                 get_userdata( $click['user_id'] )->user_email
             ];
@@ -56,6 +75,69 @@ class FileGenerator
             {
                 $meta = get_user_meta( $click['user_id'], $key, true );
                 $meta = str_replace("\r\n", " ", $meta);
+
+                if( $key == 'region' )
+                  $meta = FileGenerator::getRegion( get_user_meta( $click['user_id'], 'city', true ) );
+
+                array_push($content, $meta);
+            }
+
+            $count++;
+            $file .= implode(";", $content) . "\r\n";
+        }
+
+        return $file;
+    }
+
+    public static function getNmoAll($event_id, $date_start, $date_end)
+    {
+        $head_table = [
+             "Мероприятие",
+             "User ID",
+             "Присутсвовал времени на мероприятии",
+             "Присутсвовал времени всего",
+             "Дата нажатия",
+             "Дата регистрации",
+             "Адрес электронной почты (email)"
+        ];
+        $meta_key_saved = json_decode( DataBase::$tables['settings']->Get('template_usermeta') );
+
+        foreach ( $meta_key_saved as $value)
+            array_push($head_table, $value);
+
+        $file = implode(";", $head_table) . "\r\n";
+
+        if( $event_id === 'all' )
+            $presence = DataBase::$tables['presence']->GetAll($date_start, $date_end);
+        else
+            $presence = DataBase::$tables['presence']->GetGroup($event_id, $date_start, $date_end);
+
+        $count=0;
+
+        foreach ( $presence as $click )
+        {
+            $user_track = DataBase::$tables['track']->Get($event_id, $click['user_id']);
+            $time = ( int ) DataBase::$tables['track']->GetSumMinute($click['user_id'], $event_id);
+            $timeAll = ( int ) DataBase::$tables['track']->GetSumMinuteAll($click['user_id'], $date_start, $date_end );
+
+            $content = [
+                DataBase::$tables['events']->Get($click['event_id'])['name'],
+                $click['user_id'],
+                $time,
+                $timeAll,
+                $click['presence_time'],
+                get_userdata( $click['user_id'] )->user_registered,
+                get_userdata( $click['user_id'] )->user_email
+            ];
+
+            foreach ( $meta_key_saved as $key => $value)
+            {
+                $meta = get_user_meta( $click['user_id'], $key, true );
+                $meta = str_replace("\r\n", " ", $meta);
+
+                if( $key == 'region' )
+                  $meta = FileGenerator::getRegion( get_user_meta( $click['user_id'], 'city', true ) );
+
                 array_push($content, $meta);
             }
 
@@ -95,7 +177,7 @@ class FileGenerator
         {
             $content = [
                 $row['user_id'],
-                DataBase::$tables['events']->Get($event_id)['name'],
+                DataBase::$tables['events']->Get($row['event_id'])['name'],
                 $row['first_date'],
                 $row['last_date'],
                 get_userdata( $row['user_id'] )->user_registered,
@@ -106,6 +188,10 @@ class FileGenerator
             {
                 $meta = get_user_meta( $row['user_id'], $key, true );
                 $meta = str_replace("\r\n", " ", $meta);
+
+                if( $key == 'region' )
+                  $meta = FileGenerator::getRegion( get_user_meta( $row['user_id'], 'city', true ) );
+
                 array_push($content, $meta);
             }
 
@@ -179,6 +265,10 @@ class FileGenerator
             {
                 $meta = get_user_meta( $row['user_id'], $key, true );
                 $meta = str_replace("\r\n", " ", $meta);
+
+                if( $key == 'region' )
+                  $meta = FileGenerator::getRegion( get_user_meta( $row['user_id'], 'city', true ) );
+
                 array_push($content, $meta);
             }
 
@@ -192,6 +282,7 @@ class FileGenerator
     public static function getChat($event_id, $date_start, $date_end)
     {
         $head_table = [
+             "Меропритие",
              "User ID",
              "Дата написания",
              "Сообщение",
@@ -204,12 +295,18 @@ class FileGenerator
             array_push($head_table, $value);
 
         $file = implode(";", $head_table) . "\r\n";
-        $responce = DataBase::$tables['chat']->GetToEvent($event_id);
+
+        if( $event_id == 'all' )
+          $responce = DataBase::$tables['chat']->GetToAll($event_id);
+        else
+          $responce = DataBase::$tables['chat']->GetToEvent($event_id);
+
         $count=0;
 
         foreach ( $responce as $row )
         {
             $content = [
+                DataBase::$tables['events']->Get($row['event_id'])['name'],
                 $row['user_id'],
                 $row['write_date'],
                 $row['message'],
@@ -221,6 +318,10 @@ class FileGenerator
             {
                 $meta = get_user_meta( $row['user_id'], $key, true );
                 $meta = str_replace("\r\n", " ", $meta);
+
+                if( $key == 'region' )
+                  $meta = FileGenerator::getRegion( get_user_meta( $row['user_id'], 'city', true ) );
+
                 array_push($content, $meta);
             }
 
@@ -236,8 +337,6 @@ class FileGenerator
         $head_table = [
              "User ID",
              "Мероприятие",
-             "Дата захода",
-             "Дата выхода",
              "Время просмотра",
              "Клики НМО",
              "Форма участия",
@@ -256,7 +355,7 @@ class FileGenerator
         {
             $tracks = DataBase::$tables['track']->GetAllDate($date_start, $date_end);
             $presence = DataBase::$tables['presence']->GetGroupAll($date_start, $date_end);
-            $users = get_users( [ 'role' => 'subscriber' ] );
+            $users = get_users( [ 'role' => 'subscriber', 'include' => FileGenerator::getAudienceSubsbu( '26022' ) ] );
         }
         else
         {
@@ -270,30 +369,12 @@ class FileGenerator
 
             $users = get_users( [ 'role' => 'subscriber', 'include' => $ids ] );
         }
-
         $count=0;
 
         foreach ( $users as $user )
         {
-            $first_date = '';
-            $last_date = '';
-            $duration = '';
             $clicks = '';
-
-            foreach ( $tracks as $track )
-            {
-              if( $track['user_id'] == $user->ID )
-              {
-                  $start_time = strtotime($track['first_date']);
-                  $last_time = strtotime($track['last_date']);
-                  $presence_time = $last_time - $start_time;
-
-                  $first_date = date('Y-m-d H:i:s', $start_time);
-                  $last_date = date('Y-m-d H:i:s', $last_time);
-                  $duration = date('H:i:s', $presence_time);
-                  break;
-              }
-            }
+            $duration = ( int ) DataBase::$tables['track']->GetSumMinuteAll($user->ID, $date_start, $date_end );
 
             foreach ( $presence as $click )
             {
@@ -304,13 +385,11 @@ class FileGenerator
               }
             }
 
-            $is_auth = $first_date == '' ? 'Зарегистрирован' : 'Участвовал';
+            $is_auth = $duration == 0 ? 'Зарегистрирован' : 'Участвовал';
 
             $content = [
                 $user->ID,
                 DataBase::$tables['events']->Get($event_id)['name'],
-                $first_date,
-                $last_date,
                 $duration,
                 $clicks,
                 $is_auth,
@@ -322,6 +401,10 @@ class FileGenerator
             {
                 $meta = get_user_meta(  $user->ID, $key, true );
                 $meta = str_replace("\r\n", " ", $meta);
+
+                if( $key == 'region' )
+                  $meta = FileGenerator::getRegion( get_user_meta( $user->ID, 'city', true ) );
+
                 array_push($content, $meta);
             }
 
@@ -337,13 +420,10 @@ class FileGenerator
         $head_table = [
              "Симпозиум",
              "Зал",
-             "Дата начала выступления",
-             "Дата конца выступления",
-             "User ID",
-             "Дата захода",
-             "Дата выхода",
-             "Дата регистрации",
-             "Адрес электронной почты (email)"
+             "Модераторы",
+             "Дата начала",
+             "Дата конца",
+             "Количество просмотров"
         ];
 
         $meta_key_saved = json_decode( DataBase::$tables['settings']->Get('template_usermeta') );
@@ -378,6 +458,10 @@ class FileGenerator
                 {
                     $meta = get_user_meta( $row['user_id'], $key, true );
                     $meta = str_replace("\r\n", " ", $meta);
+
+                    if( $key == 'region' )
+                      $meta = FileGenerator::getRegion( get_user_meta( $row['user_id'], 'city', true ) );
+
                     array_push($content, $meta);
                 }
 

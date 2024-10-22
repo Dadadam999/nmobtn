@@ -3,7 +3,7 @@
  * Plugin Name: nmobtn
  * Plugin URI: https://github.com/
  * Description: Плагин, для создания кнопок НМО на любой странице. Кнопка вызывается у пользователей вручную. Есть возможность выгрузить статистику нажатий в CSV.
- * Version: 1.1.0
+ * Version: 2.1.0
  * Author: Bogdanov Andrey
  * Author URI: mailto://swarzone2100@yandex.ru
 */
